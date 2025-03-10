@@ -1,93 +1,78 @@
 package com.example.mobileadvance;
 
-import android.annotation.SuppressLint;
 import android.os.Bundle;
 
-import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-
-
-import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ProgressBar;
-import android.widget.TextView;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
-    private TextView textView;
-    private Button startButton;
-    private Button stopButton;
-    private ProgressBar progressBar;
-    private int counter = 0;
-    private boolean isRunning = false;
-    private Handler handler = new Handler();
+
+    private ListView listView;
+    private Button btnFetch;
+    private ArrayAdapter<String> adapter;
+    private ArrayList<String> countryNames;
+    private ExecutorService executorService;
+    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+
         setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-        textView = findViewById(R.id.textView);
-        startButton = findViewById(R.id.startButton);
-        stopButton = findViewById(R.id.stopButton);
-        progressBar = findViewById(R.id.progressBar);
+        listView = findViewById(R.id.listView);
+        btnFetch = findViewById(R.id.btnFetch);
+        countryNames = new ArrayList<>();
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, countryNames);
+        listView.setAdapter(adapter);
+        executorService = Executors.newSingleThreadExecutor();
+        handler = new Handler(Looper.getMainLooper());
 
-        startButton.setOnClickListener(new View.OnClickListener() {
+        btnFetch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isRunning) {
-                    isRunning = true;
-                    counter = 0;
-                    textView.setText(String.valueOf(counter));
-                    progressBar.setProgress(0);
-                    startCounting();
-                }
+                fetchCountries();
             }
-        });
 
-        stopButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                isRunning = false;
-            }
         });
     }
 
-    private void startCounting() {
-        new Thread(new Runnable() {
+    private void fetchCountries() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
-                while (isRunning && counter < 10) {
-                    try {
-                        Thread.sleep(1000); // Delay 1 second
-                        counter++;
-
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                textView.setText(String.valueOf(counter));
-                                progressBar.setProgress(counter * 10); // Update progress bar
-                                if (counter == 10) {
-                                    textView.setText("Hoàn thành!");
-                                    isRunning = false;
-                                }
-                            }
-                        });
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                ArrayList<Country> countries = NetworkUtils.fetchCountries();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (countries.isEmpty()) {
+                            Toast.makeText(MainActivity.this, "Lỗi lấy dữ liệu", Toast.LENGTH_SHORT).show();
+                        } else {
+                            updateUI(countries);
+                        }
                     }
-                }
+                });
             }
-        }).start();
+
+        });
+    }
+
+    private void updateUI(ArrayList<Country> countries) {
+        countryNames.clear();
+        for (Country country : countries) {
+            countryNames.add(country.toString());
+        }
+        adapter.notifyDataSetChanged();
     }
 
 }
