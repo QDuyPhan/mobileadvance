@@ -1,6 +1,7 @@
 package com.example.mobileadvance;
 
 import android.annotation.SuppressLint;
+import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
@@ -14,80 +15,66 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 public class MainActivity extends AppCompatActivity {
     private TextView textView;
-    private Button startButton;
-    private Button stopButton;
-    private ProgressBar progressBar;
-    private int counter = 0;
-    private boolean isRunning = false;
-    private Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+        textView = findViewById(R.id.textView);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        textView = findViewById(R.id.textView);
-        startButton = findViewById(R.id.startButton);
-        stopButton = findViewById(R.id.stopButton);
-        progressBar = findViewById(R.id.progressBar);
 
-        startButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!isRunning) {
-                    isRunning = true;
-                    counter = 0;
-                    textView.setText(String.valueOf(counter));
-                    progressBar.setProgress(0);
-                    startCounting();
-                }
-            }
-        });
-
-        stopButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                isRunning = false;
-            }
-        });
+        new GetUsersTask().execute("https://jsonplaceholder.typicode.com/users");
     }
 
-    private void startCounting() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (isRunning && counter < 10) {
-                    try {
-                        Thread.sleep(1000); // Delay 1 second
-                        counter++;
+    private class GetUsersTask extends AsyncTask<String, Void, String> {
 
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                textView.setText(String.valueOf(counter));
-                                progressBar.setProgress(counter * 10); // Update progress bar
-                                if (counter == 10) {
-                                    textView.setText("Hoàn thành!");
-                                    isRunning = false;
-                                }
-                            }
-                        });
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+        @Override
+        protected String doInBackground(String... urls) {
+            StringBuilder result = new StringBuilder();
+            try {
+                URL url = new URL(urls[0]);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream())
+                );
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    result.append(line).append("\n");
                 }
+                reader.close();
+                connection.disconnect();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "Lỗi: " + e.getMessage();
             }
-        }).start();
-    }
+            return result.toString();
+        }
 
+        @Override
+        protected void onPostExecute(String s) {
+            textView.setText(s);
+        }
+    }
 }

@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".bai4.Main4Activity">
 
   <androidx.constraintlayout.widget.ConstraintLayout
       android:layout_width="match_parent"
@@ -16,12 +16,25 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-      <TextView
-          android:id="@+id/textView"
+      <EditText
+          android:id="@+id/edtCity"
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
-          android:text="Dữ liệu sẽ hiển thị ở đâu"
-          android:textSize="16sp" />
+          android:hint="Nhập thành phố" />
+
+      <Button
+          android:id="@+id/btnGetWeather"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="Lấy thời tiết" />
+
+      <TextView
+          android:id="@+id/txtWeather"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="Thông tin thời tiết sẽ hiển thị ở đây" />
+
+
     </LinearLayout>
   </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
